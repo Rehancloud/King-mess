@@ -1,0 +1,149 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Mess Management',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final List<String> names = ["Ijaz", "Prince", "mujahedul", "Sohel","Almeen","Rehan","Mehbub"];
+  final Map<String, String> tasks = {
+    "Monday": "Ijaz",
+    "Tuesday": "Prince",
+    "Wednesday": "Mujadidul",
+    "Thursday": "Sohel",
+    "Friday": "Almeen",
+    "Saturday": "Rehan",
+    "Sunday": "Mehbub",
+    
+  };
+
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
+  @override
+  void initState() {
+    super.initState();
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+    flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    scheduleNotifications();
+  }
+
+  void scheduleNotifications() {
+    tasks.forEach((day, person) {
+      var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+          'your channel id', 'your channel name', 'your channel description',
+          importance: Importance.max, priority: Priority.high, ticker: 'ticker');
+      var platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+      );
+      flutterLocalNotificationsPlugin.showWeeklyAtDayAndTime(
+        day.hashCode, // ID
+        'Task Reminder',
+        'Today is your day for marketing tasks',
+        _nextInstanceOfDay(day),
+        platformChannelSpecifics,
+      );
+    });
+  }
+
+  Time _nextInstanceOfDay(String day) {
+    final now = DateTime.now();
+    final nextInstance = DateTime(now.year, now.month, now.day + (7 - now.weekday + _dayToInt(day)) % 7);
+    return Time(nextInstance.hour, nextInstance.minute, nextInstance.second);
+  }
+
+  int _dayToInt(String day) {
+    switch (day) {
+      case 'Monday':
+        return 1;
+      case 'Tuesday':
+        return 2;
+      case 'Wednesday':
+        return 3;
+      case 'Thursday':
+        return 4;
+      case 'Friday':
+        return 5;
+      case 'Saturday':
+        return 6;
+      case 'Sunday':
+        return 7;
+      default:
+        return 1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Mess Management'),
+      ),
+      body: ListView.builder(
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          String day = tasks.keys.elementAt(index);
+          return ListTile(
+            title: Text('$day: ${tasks[day]}'),
+            trailing: IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () {
+                _editTask(context, day);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _editTask(BuildContext context, String day) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Edit Task'),
+          content: DropdownButton<String>(
+            value: tasks[day],
+            onChanged: (String newValue) {
+              setState(() {
+                tasks[day] = newValue;
+              });
+              Navigator.of(context).pop();
+            },
+            items: names.map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+}
